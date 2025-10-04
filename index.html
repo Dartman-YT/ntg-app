@@ -55,6 +55,8 @@
     .toast{position:fixed;right:20px;bottom:20px;background:#111827;color:#fff;padding:10px 14px;border-radius:10px;box-shadow:0 10px 30px rgba(2,6,23,0.35);display:none}
     .muted-ghost{color:#9aa4b2}
     .btn-sm{padding:6px 8px;border-radius:8px;font-weight:700}
+    /* ADDED STYLE FOR CUSTOM CHECKBOX */
+    .checkbox-field { display: flex; align-items: center; gap: 8px; }
   </style>
 </head>
 <body>
@@ -64,7 +66,7 @@
         <div class="logo">GP</div>
         <div>
           <h1>GadgetPro</h1>
-          <div class="subtitle">Inventory • Orders • Finance — Two owners</div>
+          <div class="subtitle">Inventory • Orders • Finance — Single Entity</div>
         </div>
       </div>
 
@@ -76,9 +78,7 @@
       </div>
     </header>
 
-    <!-- BENTO GRID -->
     <main class="layout" id="dashboard">
-      <!-- Orders Overview (inline expandable) -->
       <section class="card" id="card-orders" data-type="inline">
         <div>
           <div class="title">Orders Overview</div>
@@ -94,30 +94,70 @@
         <div class="meta muted-ghost small">Click to expand recent orders; View All for full orders page</div>
       </section>
 
-      <!-- Financials (inline expandable) -->
       <section class="card" id="card-financials" data-type="inline">
         <div>
           <div class="title">Financials</div>
-          <div class="meta">Net profit, total sales, owner splits</div>
+          <div class="meta">Net profit, total sales, investments</div>
         </div>
-        <div style="display:flex;gap:12px;align-items:center">
-          <div style="flex:1">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;align-items:center">
+          <div>
             <div class="muted small">Total Sales</div>
             <div id="total-sales" style="font-weight:800;color:var(--success)">₹0</div>
           </div>
-          <div style="flex:1">
+          <div>
             <div class="muted small">Net Profit</div>
             <div id="net-profit" style="font-weight:800">₹0</div>
           </div>
+          <div>
+            <div class="muted small">Net Investment</div>
+            <div id="net-investment" style="font-weight:800;color:var(--accent-2)">₹0</div>
+          </div>
         </div>
-        <div style="display:flex;gap:8px;margin-top:8px">
-          <div class="kpi-pill" style="flex:1"><div class="muted small">Owner A</div><div id="owner-a">₹0</div></div>
-          <div class="kpi-pill" style="flex:1"><div class="muted small">Owner B</div><div id="owner-b">₹0</div></div>
+        <div class="inline-section" style="margin-top:10px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+                <div style="font-weight:700" class="small muted">Resettable Metrics (For Withdrawal)</div>
+                <button class="btn btn-sm ghost" id="btn-reset-profit">Reset Resettable</button>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
+                <div>
+                    <div class="muted small">Sales</div>
+                    <div id="reset-sales" style="font-weight:700">₹0</div>
+                </div>
+                <div>
+                    <div class="muted small">Profit</div>
+                    <div id="reset-profit" style="font-weight:700">₹0</div>
+                </div>
+                <div>
+                    <div class="muted small">Investment</div>
+                    <div id="reset-investment" style="font-weight:700;color:var(--accent-2)">₹0</div>
+                </div>
+            </div>
         </div>
+        <div style="margin-top:10px; text-align:right"><button class="btn btn-sm primary" id="btn-reset-all-financials">Reset All Financials</button></div>
         <div class="meta muted-ghost small">Click to expand profit breakdown and sales-left-to-regain-investment</div>
       </section>
-
-      <!-- Products (full-page modal section) -->
+      
+      <section class="card" id="card-investments" data-type="inline">
+        <div>
+          <div class="title">Investments Overview</div>
+          <div class="meta">Total capital and recent contributions</div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:center">
+            <div>
+                <div class="muted small">Total Capital</div>
+                <div id="invest-total-capital" style="font-weight:800;color:var(--accent-2)">₹0</div>
+            </div>
+            <div>
+                <div class="muted small">Investment Txs</div>
+                <div id="invest-tx-count" style="font-weight:800">0</div>
+            </div>
+        </div>
+        <div class="inline-section" style="margin-top:10px">
+            <div style="font-weight:700" class="small muted">Latest Investment</div>
+            <div id="latest-investment" class="muted small">—</div>
+        </div>
+        <div class="meta muted-ghost small">Click to view all investment transactions</div>
+      </section>
       <section class="card" id="card-products" data-type="modal">
         <div>
           <div class="title">Products</div>
@@ -130,7 +170,6 @@
         <div class="meta muted-ghost small">Click to open the product management page</div>
       </section>
 
-      <!-- Transactions Timeline (full-page modal) -->
       <section class="card" id="card-tx" data-type="modal">
         <div>
           <div class="title">Transactions Timeline</div>
@@ -143,7 +182,6 @@
         <div class="meta muted-ghost small">View full timeline to filter and export</div>
       </section>
 
-      <!-- Orders Status Management (inline) -->
       <section class="card" id="card-dispatch" data-type="inline">
         <div>
           <div class="title">Orders Status</div>
@@ -153,7 +191,6 @@
         <div class="meta muted-ghost small">Click to expand inline status controls</div>
       </section>
 
-      <!-- Exports & Imports (inline only) -->
       <section class="card hollow" id="card-io" data-type="inline">
         <div>
           <div class="title">Import & Export</div>
@@ -185,6 +222,8 @@
   const $$ = sel => Array.from(document.querySelectorAll(sel));
   const uid = (p='id') => p + '_' + Math.random().toString(36).slice(2,9);
   const nowISO = () => (new Date()).toISOString();
+  // Helper to format date into 'YYYY-MM-DD' for date inputs
+  const toISODate = (date) => (date instanceof Date ? date : new Date(date)).toISOString().split('T')[0];
   const currency = v => '₹' + Number(v||0).toLocaleString('en-IN');
   const showToast = (msg, t=2200) => {
     const el = $('#toast'); el.textContent = msg; el.style.display = 'block';
@@ -196,10 +235,18 @@
 
   // Fresh initial state (no sample data)
   let state = {
+    // Note: 'owners' is kept for legacy compatibility but is unused in calculations now
     owners: [{id:'a',name:'Owner A'},{id:'b',name:'Owner B'}],
     products: [],      // {id, name, sku, price, cost, purchased, stock, sold, returned, cancelled}
     orders: [],        // {id, orderNo, customerName, address, items:[{sku,qty,price}], total, paymentType, status, placedAt, statusHistory, note}
-    transactions: []   // {id, type, category, name, amount, ownerSplit:{a,b}, productsAffected:[{sku,qty}], timestamp, note, profit}
+    // Transaction structure: {id, type, category, name, amount (sale total/expense/investment), ownerSplit:{a,b} (kept for legacy but now all zero), productsAffected:[{sku,qty}], timestamp, note, profit (for sales)}
+    transactions: [],
+    resettableFin: {
+        totalSales: 0,
+        netProfit: 0,
+        netInvestment: 0,
+        lastReset: nowISO()
+    }
   };
 
   // Persistence
@@ -207,11 +254,62 @@
   function load(){
     const raw = localStorage.getItem(KEY);
     if(raw){
-      try{ state = JSON.parse(raw); } catch(e){ console.error('Failed to parse store, loading fresh state', e); state = {owners:[{id:'a',name:'Owner A'},{id:'b',name:'Owner B'}],products:[],orders:[],transactions:[]}; save(); }
+      try{ state = JSON.parse(raw); } catch(e){ console.error('Failed to parse store, loading fresh state', e); state = {owners:[{id:'a',name:'Owner A'},{id:'b',name:'Owner B'}],products:[],orders:[],transactions:[],resettableFin:{totalSales:0,netProfit:0,netInvestment:0,lastReset:nowISO()}}; save(); }
     } else {
       save(); // store blank initial
     }
+    // Ensure resettableFin exists after load (for older stored states)
+    if (!state.resettableFin) {
+        state.resettableFin = {totalSales:0,netProfit:0,netInvestment:0,lastReset:nowISO()};
+        save();
+    }
   }
+
+  // ---------- Calculations ----------
+  function calculateTotalFinancials() {
+    // Total Sales: Sum of 'amount' for all 'sale' transactions (Gross Sales). Note: Amount is positive for sales.
+    const totalSales = state.transactions.filter(t => t.type === 'sale').reduce((s, t) => s + Math.abs(Number(t.amount||0)), 0);
+
+    // Total Revenue (Sales) Profit: Sum of 'profit' for all 'sale' transactions (Gross Profit from Sales)
+    const totalSaleProfit = state.transactions.filter(t => t.type === 'sale').reduce((s, t) => s + Number(t.profit||0), 0);
+
+    // Total Outflows (Purchases + Expenses + Return Losses)
+    // Purchases and Expenses are recorded as NEGATIVE amounts in transactions
+    const totalOutflows = state.transactions.filter(t => t.type === 'expense' || t.type === 'purchase').reduce((s, t) => s + Number(t.amount||0), 0);
+
+    // Net Profit = Total Sale Profit + Total Outflows (since Outflows are negative, this is a subtraction)
+    const netProfit = totalSaleProfit + totalOutflows;
+
+    // Net Investment (Inflows only - recorded as POSITIVE amounts)
+    const netInvestment = state.transactions.filter(t => t.type === 'investment').reduce((s, t) => s + Number(t.amount||0), 0);
+
+    return { totalSales, netProfit, netInvestment };
+  }
+
+  function calculateResettableFinancials() {
+    const lastReset = new Date(state.resettableFin.lastReset);
+
+    // Filter transactions since the last reset
+    const recentTx = state.transactions.filter(t => new Date(t.timestamp) >= lastReset);
+
+    // Resettable Sales: Gross sales since last reset. Note: Amount is positive for sales.
+    const sales = recentTx.filter(t => t.type === 'sale').reduce((s, t) => s + Math.abs(Number(t.amount||0)), 0);
+
+    // Resettable Sale Profit: Gross profit from sales since last reset
+    const saleProfit = recentTx.filter(t => t.type === 'sale').reduce((s, t) => s + Number(t.profit||0), 0);
+
+    // Resettable Outflows: Purchases/Expenses since last reset (negative amounts)
+    const outflows = recentTx.filter(t => t.type === 'expense' || t.type === 'purchase').reduce((s, t) => s + Number(t.amount||0), 0);
+
+    // Resettable Profit
+    const profit = saleProfit + outflows;
+
+    // Resettable Investment
+    const investment = recentTx.filter(t => t.type === 'investment').reduce((s, t) => s + Number(t.amount||0), 0);
+
+    return { sales, profit, investment };
+  }
+
 
   // ---------- Rendering / UI ----------
 
@@ -229,18 +327,28 @@
     $('#kpi-returned').textContent = returned;
 
     // Financials
-    const totalSales = state.transactions.filter(t => t.type === 'sale').reduce((s, t) => s + Number(t.amount||0), 0);
-    const investSum = state.transactions.filter(t => t.type === 'investment').reduce((s, t) => s + Number(t.amount||0), 0);
-    const expenseSum = state.transactions.filter(t => t.type === 'expense' || t.type === 'purchase').reduce((s, t) => s + Number(t.amount||0), 0);
-    const net = totalSales + investSum + expenseSum; // investments negative
-    $('#total-sales').textContent = currency(totalSales);
-    $('#net-profit').textContent = currency(net);
+    const { totalSales, netProfit, netInvestment } = calculateTotalFinancials();
 
-    // Owner splits
-    const ownerA = state.transactions.reduce((s,t)=> s + Number((t.ownerSplit && t.ownerSplit.a) || 0), 0);
-    const ownerB = state.transactions.reduce((s,t)=> s + Number((t.ownerSplit && t.ownerSplit.b) || 0), 0);
-    $('#owner-a').textContent = currency(ownerA);
-    $('#owner-b').textContent = currency(ownerB);
+    $('#total-sales').textContent = currency(totalSales);
+    $('#net-profit').textContent = currency(netProfit);
+    $('#net-investment').textContent = currency(netInvestment);
+
+    // Resettable Financials
+    const { sales: resetSales, profit: resetProfit, investment: resetInvestment } = calculateResettableFinancials();
+
+    $('#reset-sales').textContent = currency(resetSales);
+    $('#reset-profit').textContent = currency(resetProfit);
+    $('#reset-investment').textContent = currency(resetInvestment);
+
+    // Investments Overview
+    const investTxs = state.transactions.filter(t => t.type === 'investment').sort((a,b)=> new Date(b.timestamp) - new Date(a.timestamp));
+    const totalCapital = investTxs.reduce((s, t) => s + Number(t.amount||0), 0);
+    const latestInvest = investTxs[0];
+
+    $('#invest-total-capital').textContent = currency(totalCapital);
+    $('#invest-tx-count').textContent = investTxs.length;
+    $('#latest-investment').textContent = latestInvest ? `${latestInvest.name} (${currency(latestInvest.amount)}) on ${toISODate(latestInvest.timestamp)}` : 'No recent investment.';
+
 
     // Products count
     $('#prod-count').textContent = state.products.length;
@@ -318,15 +426,53 @@
     if(name === 'orders'){
       ordersInlineOpen = false; const el = document.getElementById('orders-inline'); if(el) el.remove();
       $('#card-orders').classList.remove('inline-expanded');
+    } else if (name === 'fin') {
+      finInlineOpen=false; const el=document.getElementById('fin-inline'); if(el) el.remove(); $('#card-financials').classList.remove('inline-expanded');
+    } else if (name === 'dispatch') {
+      dispatchInlineOpen=false; const el=document.getElementById('dispatch-inline'); if(el) el.remove(); $('#card-dispatch').classList.remove('inline-expanded');
+    } else if (name === 'investments') {
+      investmentsInlineOpen = false; const el=document.getElementById('investments-inline'); if(el) el.remove(); $('#card-investments').classList.remove('inline-expanded');
     }
   }
 
   // Financials inline expand
   let finInlineOpen = false;
-  $('#card-financials').addEventListener('click', ()=> {
-    if(finInlineOpen){ closeInlineFin(); return; }
+  $('#card-financials').addEventListener('click', (e)=> {
+    // Prevent card click from opening/closing if a button inside was clicked
+    if(e.target.closest('button#btn-reset-profit') || e.target.closest('button#btn-reset-all-financials')) return;
+
+    if(finInlineOpen){ closeInline('fin'); return; }
     openInlineFin();
   });
+
+  // Reset Resettable Metrics
+  $('#btn-reset-profit').onclick = ()=> {
+    if(confirm('Are you sure you want to reset the current Sales, Profit, and Investment values? This is typically done after a profit withdrawal or major investment milestone.')) {
+        // NOTE: The values are recalculated based on transactions AFTER lastReset, so we only need to update the date.
+        // The old code reset the values which is wrong if transactions were not cleared.
+        state.resettableFin.lastReset = nowISO();
+        save();
+        renderDashboard();
+        showToast('Resettable financials have been reset.');
+    }
+  };
+
+  // Reset ALL Financials
+  $('#btn-reset-all-financials').onclick = ()=> {
+    if(confirm('WARNING: Are you sure you want to clear ALL transactions, which will reset TOTAL Sales, Net Profit, and Net Investment? This is generally used for a fresh start or at the end of a fiscal year.')) {
+        state.transactions = []; // Clear all transactions
+        state.resettableFin = {totalSales:0,netProfit:0,netInvestment:0,lastReset:nowISO()}; // Reset resettable as well
+        state.orders = state.orders.filter(o => o.status === 'pending' || o.status === 'shipping'); // Keep only ongoing orders
+        // Reset product stats (optional, but good for a "fresh start" concept)
+        state.products.forEach(p => { p.sold = 0; p.returned = 0; p.cancelled = 0; });
+
+        save();
+        renderDashboard();
+        showToast('All financial records have been reset.');
+    }
+  };
+
+
   function openInlineFin(){
     finInlineOpen = true;
     const card = $('#card-financials'); card.classList.add('inline-expanded');
@@ -336,10 +482,16 @@
     cont.appendChild(header);
 
     // compute sales-left-to-regain-investment
-    const investTotal = state.transactions.filter(t=>t.type==='investment').reduce((s,t)=> s + Number(t.amount||0), 0); // negative if money put in is negative
-    // profit from sales (we store profit as transaction.profit when sale recorded)
+    const investTotal = state.transactions.filter(t=>t.type==='investment').reduce((s,t)=> s + Number(t.amount||0), 0); // positive inflow
+    // Total profit from sales (we store profit as transaction.profit when sale recorded)
     const totalSaleProfit = state.transactions.filter(t=>t.type==='sale').reduce((s,t)=> s + Number(t.profit||0), 0);
-    const investedRemaining = Math.max(0, -investTotal - totalSaleProfit); // if investTotal negative
+    // Total expense outflows (recorded as negative amount in transactions)
+    const expenseOutflows = state.transactions.filter(t => t.type === 'expense' || t.type === 'purchase').reduce((s, t) => s + Number(t.amount||0), 0);
+    const netProfitTotal = totalSaleProfit + expenseOutflows;
+
+    // Remaining to recover investment = Investment - Net Profit
+    const investedRemaining = Math.max(0, investTotal - netProfitTotal);
+
     // avg profit per sale
     const saleTxs = state.transactions.filter(t=>t.type==='sale' && Number(t.profit)!=0);
     let avgProfit = 0;
@@ -350,20 +502,60 @@
 
     cont.innerHTML += `<div style="margin-top:10px" class="small muted">Investment total: <strong>${currency(investTotal)}</strong></div>
       <div class="small muted">Total sale profit: <strong>${currency(totalSaleProfit)}</strong></div>
+      <div class="small muted">Total expenses/purchases: <strong>${currency(expenseOutflows)}</strong></div>
       <div class="small muted">Remaining to recover: <strong>${currency(investedRemaining)}</strong></div>
       <div class="small muted">Avg profit per sale: <strong>${avgProfit ? currency(avgProfit.toFixed(2)) : 'N/A'}</strong></div>
       <div class="small muted">Sales left to regain investment: <strong>${salesLeft===null? 'N/A' : salesLeft}</strong></div>`;
 
     card.appendChild(cont);
-    $('#close-fin-inline').onclick = ()=> closeInlineFin();
-    $('#view-fin-full').onclick = ()=> { closeInlineFin(); openTransactionsModal(); };
+    $('#close-fin-inline').onclick = ()=> closeInline('fin');
+    $('#view-fin-full').onclick = ()=> { closeInline('fin'); openTransactionsModal(); };
   }
-  function closeInlineFin(){ finInlineOpen=false; const el=document.getElementById('fin-inline'); if(el) el.remove(); $('#card-financials').classList.remove('inline-expanded'); }
+
+
+  // Investments Card Inline Expand
+  let investmentsInlineOpen = false;
+  $('#card-investments').addEventListener('click', ()=> {
+    if(investmentsInlineOpen){ closeInline('investments'); return; }
+    openInlineInvestments();
+  });
+
+  function openInlineInvestments(){
+    investmentsInlineOpen = true;
+    const card = $('#card-investments'); card.classList.add('inline-expanded');
+    const cont = document.createElement('div'); cont.className='inline-section'; cont.id='investments-inline';
+    const header = document.createElement('div'); header.style.display='flex'; header.style.justifyContent='space-between'; header.style.alignItems='center';
+    header.innerHTML = `<div style="font-weight:700">Investment Timeline</div><div><button class="btn ghost" id="close-investments-inline">Close</button> <button class="btn" id="view-investments-full">View All</button></div>`;
+    cont.appendChild(header);
+
+    const tableWrap = document.createElement('div'); tableWrap.style.marginTop='10px'; tableWrap.style.maxHeight='220px'; tableWrap.style.overflow='auto';
+    const table = document.createElement('table'); table.className='table';
+    table.innerHTML = `<thead><tr><th>When</th><th>Category</th><th>Amount</th><th>Note</th></tr></thead><tbody></tbody>`;
+    tableWrap.appendChild(table); cont.appendChild(tableWrap);
+
+    // fill rows
+    const tbody = table.querySelector('tbody');
+    const recent = state.transactions.filter(t=>t.type==='investment').slice().sort((a,b)=> new Date(b.timestamp) - new Date(a.timestamp)).slice(0,6);
+    if(recent.length===0){
+      const tr = document.createElement('tr'); tr.innerHTML = `<td colspan="4" class="muted small">No investment transactions yet.</td>`; tbody.appendChild(tr);
+    } else {
+      recent.forEach(t=>{
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${new Date(t.timestamp).toLocaleDateString()}</td><td>${escapeHtml(t.category)}</td><td>${currency(t.amount)}</td><td>${escapeHtml(t.note||'—')}</td>`;
+        tbody.appendChild(tr);
+      });
+    }
+
+    card.appendChild(cont);
+    $('#close-investments-inline').onclick = ()=> closeInline('investments');
+    $('#view-investments-full').onclick = ()=> { closeInline('investments'); openTransactionsModal('investment'); }; // Pass filter to transactions modal
+  }
+
 
   // Dispatch inline expand (orders status controls)
   let dispatchInlineOpen = false;
   $('#card-dispatch').addEventListener('click', ()=> {
-    if(dispatchInlineOpen){ closeInlineDispatch(); return; }
+    if(dispatchInlineOpen){ closeInline('dispatch'); return; }
     openInlineDispatch();
   });
   function openInlineDispatch(){
@@ -374,10 +566,9 @@
     const list = document.createElement('div'); list.style.marginTop='8px'; list.id='dispatch-list';
     cont.appendChild(list);
     card.appendChild(cont);
-    $('#close-dispatch-inline').onclick = ()=> closeInlineDispatch();
+    $('#close-dispatch-inline').onclick = ()=> closeInline('dispatch');
     renderDispatchList();
   }
-  function closeInlineDispatch(){ dispatchInlineOpen=false; const el=document.getElementById('dispatch-inline'); if(el) el.remove(); $('#card-dispatch').classList.remove('inline-expanded'); }
   function renderDispatchList(){
     const list = $('#dispatch-list'); list.innerHTML='';
     const subset = state.orders.slice().filter(o=> o.status==='shipping' || o.status==='pending').slice(0,8);
@@ -422,7 +613,8 @@
         }
       });
       if(loss && loss > 0){
-        state.transactions.push({ id:uid('t'), type:'expense', category:'Return', name:'Shipment loss', amount: -Math.abs(loss), ownerSplit:{a:-Math.abs(loss)/2, b:-Math.abs(loss)/2}, productsAffected:[], timestamp: nowISO(), note:'Return '+o.orderNo });
+        // Create an expense transaction for the loss amount (negative amount)
+        state.transactions.push({ id:uid('t'), type:'expense', category:'Return Loss', name:'Shipment loss', amount: -Math.abs(loss), ownerSplit:{a:0, b:0}, productsAffected:[], timestamp: nowISO(), note:'Return '+o.orderNo });
       }
     }
     o.status = newStatus; o.statusHistory = o.statusHistory || []; o.statusHistory.push({ status:newStatus, at: nowISO()});
@@ -431,7 +623,7 @@
   }
 
   // IO card actions
-  $('#export-csv').onclick = ()=> exportCSV(); 
+  $('#export-csv').onclick = ()=> exportCSV();
   $('#export-styled').onclick = ()=> { exportStyledHTML(); showToast('Styled export created'); };
   $('#import-file').onclick = ()=> $('#file-input').click();
   $('#file-input').addEventListener('change', (ev)=> {
@@ -446,6 +638,9 @@
 
   // Transactions card (modal)
   $('#card-tx').addEventListener('click', () => openTransactionsModal());
+
+  // Investments card (modal)
+  $('#card-investments').addEventListener('click', () => openTransactionsModal('investment')); // Open TX modal pre-filtered
 
   // Sell button
   $('#btn-sell').onclick = () => openSellModal();
@@ -463,7 +658,7 @@
       </div>`;
     openModal(html);
     $('#close-products').onclick = closeModal;
-    $('#add-product').onclick = ()=> openAddProductModal();
+    $('#add-product').onclick = ()=> openAddProductModal(); // Correct binding
     $('#import-products').onclick = ()=> $('#file-input').click();
     $('#export-products').onclick = ()=> exportProductsCSV();
     $('#search-prod').addEventListener('input', (e)=> renderProductsFull(e.target.value));
@@ -620,7 +815,8 @@
           }
         });
         if(loss && loss > 0){
-          state.transactions.push({ id:uid('t'), type:'expense', category:'Return', name:'Shipment loss', amount: -Math.abs(loss), ownerSplit:{a:-Math.abs(loss)/2, b:-Math.abs(loss)/2}, productsAffected:[], timestamp: nowISO(), note:'Return '+o.orderNo });
+          // Create an expense transaction for the loss amount (negative amount)
+          state.transactions.push({ id:uid('t'), type:'expense', category:'Return Loss', name:'Shipment loss', amount: -Math.abs(loss), ownerSplit:{a:0, b:0}, productsAffected:[], timestamp: nowISO(), note:'Return '+o.orderNo });
         }
       }
       o.status = ns; o.statusHistory = o.statusHistory || []; o.statusHistory.push({ status:ns, at: nowISO()});
@@ -629,18 +825,24 @@
   }
 
   // ---------- Transactions Modal (full page) ----------
-  function openTransactionsModal(){
-    const html = `<div style="display:flex;justify-content:space-between;align-items:center"><h2>Transactions</h2><div><button class="btn ghost" id="close-tx">Close</button> <button class="btn" id="add-tx">Add</button></div></div>
+  function openTransactionsModal(initialFilter=''){
+    const html = `<div style="display:flex;justify-content:space-between;align-items:center"><h2>Transactions</h2><div><button class="btn ghost" id="close-tx">Close</button> <button class="btn" id="add-tx">Add Other Transaction</button></div></div>
       <div style="margin-top:12px">
         <div style="display:flex;gap:8px;align-items:center"><select id="tx-filter-type"><option value="">All</option><option value="sale">Sale</option><option value="purchase">Purchase</option><option value="investment">Investment</option><option value="expense">Expense</option></select>
         <input id="tx-from" type="date"><input id="tx-to" type="date"><button class="btn" id="apply-tx-filter">Filter</button></div>
-        <div style="margin-top:12px;max-height:520px;overflow:auto"><table class="table" id="tx-table-full"><thead><tr><th>When</th><th>Type</th><th>Details</th><th>Amount</th><th>Owner split</th></tr></thead><tbody></tbody></table></div>
+        <div style="margin-top:12px;max-height:520px;overflow:auto"><table class="table" id="tx-table-full"><thead><tr><th>When</th><th>Type</th><th>Details</th><th>Amount</th><th>Profit</th></tr></thead><tbody></tbody></table></div>
       </div>`;
     openModal(html);
     $('#close-tx').onclick = closeModal;
     $('#add-tx').onclick = ()=> openAddTransactionModal();
     $('#apply-tx-filter').onclick = ()=> renderTransactionsFull($('#tx-filter-type').value, $('#tx-from').value, $('#tx-to').value);
-    renderTransactionsFull('', '', '');
+
+    // Apply initial filter if provided
+    if (initialFilter) {
+      $('#tx-filter-type').value = initialFilter;
+    }
+
+    renderTransactionsFull($('#tx-filter-type').value, '', '');
   }
 
   function renderTransactionsFull(filter='', from='', to=''){
@@ -652,21 +854,29 @@
       const ts = new Date(t.timestamp);
       if(fromDate && ts < fromDate) return;
       if(toDate && ts > toDate) return;
-      const owners = `A: ${currency(t.ownerSplit?.a||0)} / B: ${currency(t.ownerSplit?.b||0)}`;
+
       const tr = document.createElement('tr');
-      const cls = (t.amount >= 0) ? 'style="color:green;font-weight:700"' : 'style="color:red;font-weight:700"';
-      tr.innerHTML = `<td>${ts.toLocaleString()}</td><td>${escapeHtml(t.type)}</td><td>${escapeHtml((t.category||'') + ' ' + (t.name||''))} ${t.productsAffected?('<div class="muted small">'+ t.productsAffected.map(x=> x.sku+'×'+x.qty).join(', ') + '</div>') : ''} <div class="muted small">${escapeHtml(t.note||'')}</div></td><td ${cls}>${currency(t.amount)}</td><td>${owners}</td>`;
+      // Sales/Investment are green, Purchases/Expenses are red (as they are outflows, stored as negative amount)
+      let amountCls = '';
+      if (t.type === 'sale' || t.type === 'investment') amountCls = 'style="color:green;font-weight:700"';
+      // Use Math.abs for absolute amount display for Purchases/Expenses
+      else if (t.type === 'purchase' || t.type === 'expense') amountCls = 'style="color:red;font-weight:700"';
+
+      const profitCol = t.type === 'sale' ? currency(t.profit) : '—';
+      const displayAmount = t.type === 'purchase' || t.type === 'expense' ? currency(Math.abs(t.amount)) : currency(t.amount);
+
+      tr.innerHTML = `<td>${ts.toLocaleString()}</td><td>${escapeHtml(t.type)}</td><td>${escapeHtml((t.category||'') + ' ' + (t.name||''))} ${t.productsAffected?('<div class="muted small">'+ t.productsAffected.map(x=> x.sku+'×'+x.qty).join(', ') + '</div>') : ''} <div class="muted small">${escapeHtml(t.note||'')}</div></td><td ${amountCls}>${displayAmount}</td><td>${profitCol}</td>`;
       tbody.appendChild(tr);
     });
   }
 
   function openAddTransactionModal(){
-    const html = `<h3>Add Transaction</h3>
+    const html = `<h3>Add Other Transaction (Investment, Purchase, or Expense)</h3>
       <div style="display:grid;gap:8px;margin-top:8px">
-        <div class="field"><label>Type</label><select id="tx-type-select"><option value="investment">Investment</option><option value="purchase">Purchase</option><option value="expense">Expense</option></select></div>
-        <div class="field"><label>Category / Name</label><input id="tx-name"/></div>
-        <div class="field"><label>Amount (positive for inflow/profit, negative for outflow)</label><input id="tx-amount" type="number"/></div>
-        <div class="field"><label>Owner split A,B (absolute numbers)</label><div style="display:flex;gap:8px"><input id="tx-owner-a" placeholder="Owner A"/><input id="tx-owner-b" placeholder="Owner B"/></div></div>
+        <div class="field"><label>Type</label><select id="tx-type-select"><option value="investment">Investment (Cash In)</option><option value="purchase">Stock Purchase (Cash Out)</option><option value="expense">Other Expense (Cash Out)</option></select></div>
+        <div class="field"><label>Category</label><input id="tx-category" placeholder="e.g. Initial Capital, Website Renewal, New Stock"/></div>
+        <div class="field"><label>Name / Description</label><input id="tx-name" placeholder="Short description of the transaction"/></div>
+        <div style="display:flex;gap:8px"><div class="field" style="flex:1"><label>Amount (positive for Inflow, negative for Outflow)</label><input id="tx-amount" type="number" placeholder="Enter positive for Inflow, negative for Outflow"/></div><div class="field" style="width:180px"><label>Transaction Date</label><input id="tx-date" type="date" value="${toISODate(new Date())}"/></div></div>
         <div class="field"><label>Note</label><textarea id="tx-note"></textarea></div>
         <div style="display:flex;justify-content:flex-end;gap:8px"><button class="btn ghost" id="cancel-tx">Cancel</button><button class="btn" id="save-tx">Save</button></div>
       </div>`;
@@ -674,40 +884,72 @@
     $('#cancel-tx').onclick = closeModal;
     $('#save-tx').onclick = ()=>{
       const type = $('#tx-type-select').value; let amt = Number($('#tx-amount').value||0);
-      const name = $('#tx-name').value.trim(); const ownersA = Number($('#tx-owner-a').value||0); const ownersB = Number($('#tx-owner-b').value||0);
+      const category = $('#tx-category').value.trim();
+      const name = $('#tx-name').value.trim();
       const note = $('#tx-note').value.trim();
-      // purchases and investments could be treated as negative if user entered positive; keep user's sign but document says investments added by negative - we leave control to user for sign to avoid surprises
-      // create tx
-      const tx = { id:uid('t'), type, category:type, name, amount: amt, ownerSplit:{a:ownersA, b:ownersB}, productsAffected:[], timestamp: nowISO(), note };
+      const txDate = $('#tx-date').value;
+
+      if(amt === 0) { alert('Amount cannot be zero.'); return; }
+      if(!category) { alert('Category is required.'); return; }
+      if(!txDate) { alert('Transaction date is required.'); return; }
+
+      // Use the provided date, defaulting to 12:00:00 of that day
+      const timestamp = new Date(txDate + 'T12:00:00Z').toISOString();
+
+      if(type === 'investment' && amt < 0) { alert('Investment must be a POSITIVE amount (inflow).'); return; }
+      if((type === 'purchase' || type === 'expense') && amt > 0) {
+        // Enforce negative amount for outflow, if user entered positive
+        amt = -Math.abs(amt);
+      }
+
+      // create tx (ownerSplit is kept for structure, but is zeroed as per request)
+      const tx = { id:uid('t'), type, category, name, amount: amt, ownerSplit:{a:0, b:0}, productsAffected:[], timestamp, note };
       state.transactions.push(tx);
-      // if purchase, optionally ask to add to stock (ask simple prompt)
+
+      // if purchase, optionally ask to add to stock
       if(type === 'purchase'){
-        const sku = prompt('If purchase applies to a product, enter its SKU (leave blank to skip):','');
+        const sku = prompt('If this purchase applies to product stock, enter its SKU (leave blank to skip adding stock):','');
         if(sku){
           const p = state.products.find(pp => pp.sku === sku);
           if(p){
-            const q = Number(prompt('Quantity purchased','0')||0);
-            if(q > 0){ p.purchased = (Number(p.purchased)||0) + q; p.stock = (Number(p.stock)||0) + q; }
+            const q = Number(prompt('Quantity purchased to add to stock (enter 0 to skip stock update)','0')||0);
+            if(q > 0){
+              p.purchased = (Number(p.purchased)||0) + q;
+              p.stock = (Number(p.stock)||0) + q;
+              tx.productsAffected.push({sku:p.sku, qty:q}); // record what stock was affected
+              showToast('Stock updated successfully.');
+            }
           } else {
             alert('SKU not found; purchase saved as transaction only.');
           }
         }
       }
+
       save(); closeModal(); renderDashboard(); showToast('Transaction saved');
     };
   }
 
   // ---------- Sell product modal ----------
   function openSellModal(prefSku){
-    const options = state.products.map(p => `<option value="${p.id}" data-sku="${p.sku}" data-stock="${p.stock}">${escapeHtml(p.name)} — ${escapeHtml(p.sku)} (stock:${p.stock})</option>`).join('');
+    const options = state.products.map(p => `<option value="${p.id}" data-sku="${p.sku}" data-price="${p.price}" data-cost="${p.cost}" data-stock="${p.stock}">${escapeHtml(p.name)} — ${escapeHtml(p.sku)} (stock:${p.stock})</option>`).join('');
     const html = `<h3>Sell product / Create order</h3>
       <div style="display:grid;gap:8px;margin-top:8px">
         <div class="field"><label>Product</label><select id="sell-product"><option value="">-- choose --</option>${options}</select></div>
         <div style="display:flex;gap:8px"><div class="field" style="flex:1"><label>SKU</label><input id="sell-sku" readonly/></div><div class="field" style="width:140px"><label>Stock</label><input id="sell-stock" readonly/></div></div>
-        <div style="display:flex;gap:8px"><div class="field" style="flex:1"><label>Quantity</label><input id="sell-qty" type="number" min="1" value="1"/></div><div class="field" style="width:160px"><label>Payment</label><select id="sell-pay"><option>UPI</option><option>Cash</option><option>Card</option></select></div></div>
+
+        <div style="display:flex;gap:8px">
+            <div class="field" style="flex:1"><label>Price/unit (Default)</label><input id="sell-price-placeholder" readonly/></div>
+            <div class="field" style="flex:1"><label>Quantity</label><input id="sell-qty" type="number" min="1" value="1"/></div>
+        </div>
+        <div class="checkbox-field">
+            <input type="checkbox" id="custom-price-checkbox" style="width:auto;margin:0"/>
+            <label for="custom-price-checkbox">Use Custom Price?</label>
+        </div>
+        <div class="field" id="custom-price-field" style="display:none"><label>Custom Selling Price/unit</label><input id="sell-custom-price" type="number" step="0.01"/></div>
+        <div class="field" style="width:160px"><label>Payment</label><select id="sell-pay"><option>UPI</option><option>Cash</option><option>Card</option></select></div>
         <div class="field"><label>Buyer name</label><input id="sell-name"/></div>
         <div class="field"><label>Address</label><textarea id="sell-address"></textarea></div>
-        <div class="field"><label>Note</label><textarea id="sell-note"></textarea></div>
+        <div style="display:flex;gap:8px"><div class="field" style="flex:1"><label>Note</label><textarea id="sell-note"></textarea></div><div class="field" style="width:180px"><label>Sale Date</label><input id="sell-date" type="date" value="${toISODate(new Date())}"/></div></div>
         <div style="display:flex;justify-content:space-between;align-items:center">
           <div class="muted small">If stock is zero, sale is blocked.</div>
           <div style="display:flex;gap:8px"><button class="btn ghost" id="cancel-sell">Cancel</button><button class="btn primary" id="confirm-sell">Confirm Sale</button></div>
@@ -717,22 +959,103 @@
     // handlers
     $('#cancel-sell').onclick = closeModal;
     const sel = $('#sell-product'), skuIn = $('#sell-sku'), stockIn = $('#sell-stock'), qtyIn = $('#sell-qty');
-    function updateSel(){ const opt = sel.selectedOptions[0]; if(!opt){ skuIn.value=''; stockIn.value=''; qtyIn.max = 99999; return; } skuIn.value = opt.dataset.sku || ''; stockIn.value = opt.dataset.stock || '0'; qtyIn.max = Number(opt.dataset.stock)||99999; }
-    sel.onchange = updateSel; if(prefSku){ const p = state.products.find(x=> x.sku===prefSku); if(p) sel.value = p.id; } updateSel();
+    const pricePlaceholder = $('#sell-price-placeholder');
+    const customPriceCheckbox = $('#custom-price-checkbox');
+    const customPriceField = $('#custom-price-field');
+    const customPriceInput = $('#sell-custom-price');
+
+    function updateSel(){
+      const opt = sel.selectedOptions[0];
+      if(!opt){
+        skuIn.value=''; stockIn.value=''; qtyIn.max = 99999;
+        pricePlaceholder.value = '';
+        customPriceInput.value = '';
+        customPriceCheckbox.checked = false;
+        customPriceField.style.display = 'none';
+        return;
+      }
+      skuIn.value = opt.dataset.sku || '';
+      stockIn.value = opt.dataset.stock || '0';
+      qtyIn.max = Number(opt.dataset.stock)||99999;
+      pricePlaceholder.value = currency(opt.dataset.price);
+    }
+
+    function toggleCustomPrice(){
+        customPriceField.style.display = customPriceCheckbox.checked ? 'block' : 'none';
+        if (!customPriceCheckbox.checked) {
+            customPriceInput.value = ''; // Clear custom price when turning off
+        }
+    }
+
+    sel.onchange = updateSel;
+    customPriceCheckbox.onchange = toggleCustomPrice;
+
+    if(prefSku){ const p = state.products.find(x=> x.sku===prefSku); if(p) sel.value = p.id; }
+    updateSel();
+
     $('#confirm-sell').onclick = ()=> {
       const pid = sel.value; if(!pid){ alert('Select product'); return; }
       const p = state.products.find(x=> x.id === pid); if(!p){ alert('Product not found'); return; }
       const qty = Number(qtyIn.value||0); if(qty <= 0){ alert('Quantity > 0'); return; }
       if(Number(p.stock||0) < qty){ alert('Not enough stock. Current: ' + (p.stock||0)); return; }
+
+      const saleDate = $('#sell-date').value; if(!saleDate) { alert('Sale date is required.'); return; }
+      
+      // Determine the selling price per unit
+      let sellingPricePerUnit = Number(p.price||0);
+      let isCustomPrice = false;
+      if (customPriceCheckbox.checked) {
+          const customPrice = Number(customPriceInput.value||0);
+          if (customPrice > 0) {
+              sellingPricePerUnit = customPrice;
+              isCustomPrice = true;
+          } else {
+              alert('Custom price must be greater than zero.');
+              return;
+          }
+      }
+
+      // Use the provided date, defaulting to 12:00:00 of that day for transaction/order timestamp
+      const timestamp = new Date(saleDate + 'T12:00:00Z').toISOString();
+
       // proceed sale: reduce stock, create order and transaction
       p.stock = Number(p.stock||0) - qty; p.sold = Number(p.sold||0) + qty;
-      const total = Number(p.price||0) * qty;
-      const profit = (Number(p.price||0) - Number(p.cost||0)) * qty;
-      const ownerAshare = Math.round(profit/2); const ownerBshare = profit - ownerAshare;
-      const tx = { id:uid('t'), type:'sale', category:'Retail', name:p.name, amount: total, profit: profit, ownerSplit:{a:ownerAshare, b:ownerBshare}, productsAffected:[{sku:p.sku, qty}], timestamp: nowISO(), note: $('#sell-note').value||'' };
+      
+      // Calculations based on the chosen sellingPricePerUnit
+      const total = sellingPricePerUnit * qty; // Gross Sale Amount (Total Sales)
+      const profit = (sellingPricePerUnit - Number(p.cost||0)) * qty; // Gross Profit on this sale
+
+      // Transaction: Amount is the Gross Sale Total, Profit is the Gross Profit
+      const tx = { 
+          id:uid('t'), 
+          type:'sale', 
+          category:'Retail', 
+          name:p.name + (isCustomPrice ? ' (Custom Price)' : ''), 
+          amount: total, 
+          profit: profit, 
+          ownerSplit:{a:0, b:0}, 
+          productsAffected:[{sku:p.sku, qty}], 
+          timestamp, 
+          note: $('#sell-note').value||'' 
+      };
       state.transactions.push(tx);
-      const order = { id:uid('o'), orderNo: 'ORD' + Math.floor(Math.random()*900000+10000), customerName: $('#sell-name').value||'Unknown', address: $('#sell-address').value||'', items:[{sku:p.sku, qty, price:p.price}], total, paymentType: $('#sell-pay').value, status:'shipping', placedAt: nowISO(), statusHistory:[{status:'placed', at: nowISO()}], note: $('#sell-note').value||'' };
+
+      // Order: The item price recorded in the order is the price at which it was sold (can be custom price)
+      const order = { 
+          id:uid('o'), 
+          orderNo: 'ORD' + Math.floor(Math.random()*900000+10000), 
+          customerName: $('#sell-name').value||'Unknown', 
+          address: $('#sell-address').value||'', 
+          items:[{sku:p.sku, qty, price:sellingPricePerUnit}], // Use actual selling price
+          total, 
+          paymentType: $('#sell-pay').value, 
+          status:'shipping', 
+          placedAt: timestamp, 
+          statusHistory:[{status:'placed', at: timestamp}], 
+          note: $('#sell-note').value||'' 
+      };
       state.orders.push(order);
+
       save(); closeModal(); renderDashboard(); showToast('Sale & order created');
     };
   }
@@ -759,35 +1082,41 @@
   function exportCSV(){
     // Export orders, products, transactions in separate sections in one CSV file (simple).
     const lines = [];
-    lines.push('SECTION,TYPE,ID,REF,NAME,SKU,AMOUNT,STATUS,OWNER_A,OWNER_B,NOTE,WHEN');
+    lines.push('SECTION,TYPE,ID,REF,NAME,SKU,AMOUNT,PROFIT,STATUS,NOTE,WHEN');
     state.transactions.forEach(t=>{
-      lines.push(['TRANSACTION', t.type, t.id, t.name||'', (t.productsAffected? t.productsAffected.map(x=>x.sku).join('|') : ''), '', t.amount, '', (t.ownerSplit?.a||''), (t.ownerSplit?.b||''), t.note||'', t.timestamp].map(csvSafe).join(','));
+      // Use PROFIT field for sales, empty for others
+      const profitCol = t.type === 'sale' ? t.profit : '';
+      const amount = t.type === 'purchase' || t.type === 'expense' ? Math.abs(t.amount) : t.amount; // Export outflows as positive for clarity
+      lines.push(['TRANSACTION', t.type, t.id, t.name||'', (t.productsAffected? t.productsAffected.map(x=>x.sku).join('|') : ''), amount, profitCol, '', t.note||'', t.timestamp].map(csvSafe).join(','));
     });
     state.orders.forEach(o=>{
-      lines.push(['ORDER', 'order', o.id, o.orderNo, o.customerName, o.items.map(i=>i.sku).join('|'), o.total, o.status, '', '', o.note||'', o.placedAt].map(csvSafe).join(','));
+      lines.push(['ORDER', 'order', o.id, o.orderNo, o.customerName, o.items.map(i=>i.sku).join('|'), o.total, '', o.status, o.note||'', o.placedAt].map(csvSafe).join(','));
     });
     state.products.forEach(p=>{
-      lines.push(['PRODUCT', 'product', p.id, p.sku, p.name, p.sku, p.price, '', '', '', '', ''].map(csvSafe).join(','));
+      lines.push(['PRODUCT', 'product', p.id, p.sku, p.name, p.sku, p.price, p.cost, '', '', ''].map(csvSafe).join(','));
     });
     const blob = new Blob([lines.join('\n')], {type:'text/csv;charset=utf-8;'});
     const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'gadgetpro_export.csv'; a.click(); URL.revokeObjectURL(a.href);
   }
 
   function exportStyledHTML(){
-    // Investments black, purchases/profit green, cancelled/returned red
-    let html = `<html><head><meta charset="utf-8"><title>GadgetPro Styled Export</title><style>table{border-collapse:collapse}td,th{border:1px solid #ddd;padding:8px} .green{color:green;font-weight:700}.red{color:red;font-weight:700}.black{color:black}</style></head><body><h2>Transactions</h2><table><thead><tr><th>When</th><th>Type</th><th>Name</th><th>SKU(s)</th><th>Amount</th><th>Note</th></tr></thead><tbody>`;
+    // Investments green, purchases/expenses red, profit green/red
+    let html = `<html><head><meta charset="utf-8"><title>GadgetPro Styled Export</title><style>table{border-collapse:collapse}td,th{border:1px solid #ddd;padding:8px} .green{color:var(--success);font-weight:700}.red{color:var(--danger);font-weight:700}.black{color:var(--text)}</style></head><body><h2>Transactions</h2><table><thead><tr><th>When</th><th>Type</th><th>Name</th><th>SKU(s)</th><th>Amount</th><th>Profit</th><th>Note</th></tr></thead><tbody>`;
     state.transactions.slice().sort((a,b)=> new Date(b.timestamp) - new Date(a.timestamp)).forEach(t=>{
       let cls='black';
-      if(t.type === 'investment') cls='black';
-      if(t.type === 'expense') cls='red';
-      if(t.type === 'purchase' || t.type === 'sale') cls='green';
-      html += `<tr><td>${t.timestamp}</td><td>${escapeHtml(t.type)}</td><td>${escapeHtml(t.name||'')}</td><td>${t.productsAffected? t.productsAffected.map(x=> x.sku + '×' + x.qty).join(', ') : ''}</td><td class="${cls}">${t.amount}</td><td>${escapeHtml(t.note||'')}</td></tr>`;
+      // Inflows are green
+      if(t.type === 'investment' || (t.type === 'sale' && t.profit >= 0)) cls='green';
+      // Outflows/Losses are red
+      if(t.type === 'expense' || t.type === 'purchase' || (t.type === 'sale' && t.profit < 0)) cls='red';
+      const profitCol = t.type === 'sale' ? currency(t.profit) : '—';
+      const displayAmount = t.type === 'purchase' || t.type === 'expense' ? currency(Math.abs(t.amount)) : currency(t.amount); // Show absolute amount for outflows
+      html += `<tr><td>${t.timestamp}</td><td>${escapeHtml(t.type)}</td><td>${escapeHtml(t.category||'') + ' ' + escapeHtml(t.name||'')}</td><td>${t.productsAffected? t.productsAffected.map(x=> x.sku + '×' + x.qty).join(', ') : ''}</td><td class="${cls}">${displayAmount}</td><td>${profitCol}</td><td>${escapeHtml(t.note||'')}</td></tr>`;
     });
     html += '</tbody></table>';
     html += `<h2>Orders</h2><table><thead><tr><th>Order#</th><th>Customer</th><th>Items</th><th>Total</th><th>Status</th><th>Placed</th></tr></thead><tbody>`;
     state.orders.forEach(o=>{
-      const cls = (o.status === 'cancelled' || o.status === 'returned') ? 'red' : '';
-      html += `<tr><td>${o.orderNo}</td><td>${escapeHtml(o.customerName)}</td><td>${o.items.map(it=>escapeHtml(it.sku)+'×'+it.qty).join(', ')}</td><td>${o.total}</td><td class="${cls}">${o.status}</td><td>${o.placedAt}</td></tr>`;
+      const statusCls = (o.status === 'cancelled' || o.status === 'returned') ? 'red' : 'black';
+      html += `<tr><td>${o.orderNo}</td><td>${escapeHtml(o.customerName)}</td><td>${o.items.map(it=>escapeHtml(it.sku)+'×'+it.qty).join(', ')}</td><td>${currency(o.total)}</td><td class="${statusCls}">${o.status}</td><td>${o.placedAt}</td></tr>`;
     });
     html += '</tbody></table></body></html>';
     const blob = new Blob([html], {type:'text/html'}); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'gadgetpro_styled_export.html'; a.click(); URL.revokeObjectURL(a.href);
@@ -815,6 +1144,10 @@
           // basic shape validation
           if(parsed.products && parsed.orders && parsed.transactions){
             state = parsed;
+            // Ensure resettableFin is present after import
+            if (!state.resettableFin) {
+                state.resettableFin = {totalSales:0,netProfit:0,netInvestment:0,lastReset:nowISO()};
+            }
             save(); renderDashboard(); showToast('JSON import successful');
           } else {
             alert('JSON format not recognized (expected products, orders, transactions arrays).');
@@ -829,7 +1162,10 @@
           const cols = line.split(',').map(c => c.replace(/"/g,'').trim());
           const obj = {}; headers.forEach((h,i)=> obj[h] = cols[i]);
           if(obj.sku){
-            state.products.push({ id:uid('p'), sku: obj.sku, name: obj.name||'', price: Number(obj.price||0), cost: Number(obj.cost||0), purchased: Number(obj.purchased||0)||0, stock: Number(obj.stock||0)||0, sold:0, returned:0, cancelled:0 });
+            // Check if product exists to avoid duplicates on partial import
+            if (!state.products.find(p => p.sku === obj.sku)) {
+              state.products.push({ id:uid('p'), sku: obj.sku, name: obj.name||'', price: Number(obj.price||0), cost: Number(obj.cost||0), purchased: Number(obj.purchased||0)||0, stock: Number(obj.stock||0)||0, sold:0, returned:0, cancelled:0 });
+            }
           }
         });
         save(); renderDashboard(); showToast('Products imported from CSV');
@@ -847,35 +1183,7 @@
     e.target.value = '';
   });
 
-  // ---------- Utility: add order/txn programmatically (used by demos) ----------
-  // (none — app starts fresh)
-
   // ---------- Open/Close running ----------
-
-  function openOrdersModal(){ openOrdersModal(); } // placeholder to avoid lint
-
-  // ---------- Misc helpers for modals used earlier ----------
-  function openProductsModal(){ /* function declared earlier - we call it through click binding */ }
-  function openTransactionsModal(){ /* earlier */ }
-
-  // ---------- Misc convenience functions ----------
-
-  // Expose some actions for the header buttons which already are set to call named fns:
-  // For simplicity, bind header clicks now to functions we've defined earlier:
-  $('#btn-products').onclick = ()=> openProductsModal();
-  $('#card-products').onclick = ()=> openProductsModal();
-  $('#card-tx').onclick = ()=> openTransactionsModal();
-
-  // ---------- Simple export wrappers already used ----------
-
-  // ---------- Helper: open modal for transactions/products reuse ----------
-  // (already implemented above via openModal()/closeModal())
-
-  // ---------- Order viewing helper ----------
-  function openOrderViewModal(id){ openOrderViewModal(id); } // placeholder (already defined)
-
-  // ---------- Helpers previously referenced: renderProductsFull, renderOrdersFull etc. ----------
-  // They are defined above; nothing to do.
 
   // ---------- Start up: load, bind events, initial render ----------
   load();
@@ -883,6 +1191,8 @@
   // Bind card click behaviors already set earlier; ensure certain buttons (some are duplicated) are bound properly:
   $('#card-products').onclick = () => openProductsModal();
   $('#card-tx').onclick = () => openTransactionsModal();
+  $('#card-investments').onclick = () => openTransactionsModal('investment');
+
 
   // Export buttons in header already wired
   $('#btn-export').onclick = ()=> { exportCSV(); exportStyledHTML(); showToast('Exports ready'); };
@@ -892,17 +1202,10 @@
   $('#export-csv').onclick = ()=> exportCSV();
   $('#export-styled').onclick = ()=> { exportStyledHTML(); showToast('Styled export ready'); };
 
-  // products export used in products modal uses exportProductsCSV()
-
   // initial render
   renderDashboard();
 
-  // attach delegates that weren't possible earlier due to function hoisting intricacies:
-  // card-orders click already bound above
-  // card-financials click is bound above
-  // dispatch "Change" and "View" buttons in inline dispatch are dynamically generated in renderDispatchList
-
-  // safety: ensure modal open functions available on global scope for inline handlers
+  // safety: ensure modal open functions available on window scope for inline handlers (if needed)
   window.openProductsModal = openProductsModal;
   window.openTransactionsModal = openTransactionsModal;
   window.openOrderViewModal = openOrderViewModal;
@@ -915,12 +1218,6 @@
   document.addEventListener('keydown', (ev) => {
     if(ev.ctrlKey && ev.key === 's'){ ev.preventDefault(); download('gadgetpro-backup.json', JSON.stringify(state), 'application/json'); showToast('Backup downloaded'); }
   });
-
-  // ---------- small utilities ----------
-  function download(filename, text, mime='application/json'){ const blob = new Blob([text], {type:mime}); const a=document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = filename; a.click(); URL.revokeObjectURL(a.href); }
-
-  // ---------- Ensure no sample data: state starts empty, but UI must handle empty gracefully ----------
-  // Already handled above.
 
   // End IIFE
 })();
