@@ -215,7 +215,7 @@
   </div>
 
 <script>
-/* Final app JS (fresh app, no sample data). All features described implemented. */
+    /* Final app JS (fresh app, no sample data). All features described implemented. */
 (function(){
   // Helpers
   const $ = sel => document.querySelector(sel);
@@ -394,7 +394,7 @@
    * Reverses the financial and stock effects of a SALE transaction and its associated order.
    * Called when an order is cancelled or returned, or when an order is deleted.
    * @param {object} order - The order object being reversed.
-   * @param {string} type - 'returned' or 'cancelled'.
+   * @param {string} type - 'returned' or 'cancelled' or 'delete'.
    * @param {number} loss - Optional: shipment loss amount for 'returned' type.
    */
   function reverseSaleEffects(order, type, loss = 0) {
@@ -425,35 +425,11 @@
       if (saleTxIndex !== -1) {
           const originalTx = state.transactions[saleTxIndex];
 
-          // Create a reversal transaction (expense/refund)
-          // Loss of funds (Total Sale Amount) as an expense/refund
-          const reversalAmount = -Math.abs(originalTx.amount); 
-          const reversalProfit = -Math.abs(originalTx.profit);
-
-          // We record the negative of the original sale amount and negative of the profit
-          // The calculation logic sums up 'profit' for sales, so a negative profit reverses it.
-          // The calculation logic sums up 'amount' for sales, so a transaction of type 'expense' 
-          // with a negative amount (already how expense is stored) will be ignored by totalSales
-          // but its profit (which is zero for expense) will not affect the net profit calculation,
-          // so we need a dedicated 'reversal' transaction type or to adjust the original.
-          
-          // *SIMPLER FIX*: For Cancelled/Returned, create a new Expense transaction
-          // that records the loss (which is the Total Sale Amount - Total Cost of Goods Sold) 
-          // and a separate Expense transaction for the Shipment Loss. This is slightly complex 
-          // as the original transaction is not directly modified, but we can't remove it 
-          // if we want a full history.
-
-          // **IMPROVED FIX**: Create a new transaction of type 'expense' for the loss of PROFIT.
-          // The *original sale transaction* remains for historical accuracy.
-          // We create an **Expense** transaction for the **Total Sale Amount (as outflow)**
-          // and an **Adjustment** transaction to reduce the recorded **Profit**. 
-          // *Alternatively*, simply create an 'adjustment' expense transaction that is the loss of the original profit.
-
           // --- IMPLEMENTATION: Simple Profit Reversal Expense ---
           const reversalNote = `${type} of ${order.orderNo}. Reversing profit and loss of goods.`;
 
           // A. Reversal of Goods/Sale Profit Loss: Create an expense for the profit amount (negative)
-          if(originalTx.profit > 0){
+          if(originalTx.profit > 0 && type !== 'delete'){ // Only create reversal if not deleting the transaction entirely
              state.transactions.push({ 
                 id:uid('t'), type:'expense', category: type + ' Profit Reversal', 
                 name: order.orderNo, amount: -Math.abs(originalTx.profit), ownerSplit:{a:0, b:0}, 
@@ -463,7 +439,7 @@
           }
 
           // B. Add expense for shipment loss (if any)
-          if (loss > 0) {
+          if (loss > 0 && type !== 'delete') { // Only create reversal if not deleting the transaction entirely
               state.transactions.push({ 
                   id:uid('t'), type:'expense', category:'Return Loss', 
                   name:'Shipment loss', amount: -Math.abs(loss), ownerSplit:{a:0, b:0}, 
@@ -1076,7 +1052,7 @@
         </div>
         <div class="field" id="custom-price-field" style="display:none"><label>Custom Selling Price/unit</label><input id="sell-custom-price" type="number" step="0.01"/></div>
         
-        <div class="field"><label>Shipping Charge (Part of Total Sale & Profit)</label><input id="sell-shipping-charge" type="number" value="0" step="0.01"/></div>
+        <div class="field"><label>Shipping Charge (Collected from Customer)</label><input id="sell-shipping-charge" type="number" value="0" step="0.01"/></div>
         
         <div class="field" style="width:160px"><label>Payment</label><select id="sell-pay"><option>UPI</option><option>Cash</option><option>Card</option></select></div>
         <div class="field"><label>Buyer name</label><input id="sell-name"/></div>
@@ -1148,7 +1124,7 @@
           }
       }
       
-      // Get Shipping Charge (Issue 3)
+      // Get Shipping Charge
       const shippingCharge = Number(shippingChargeInput.value || 0);
 
       // Use the provided date, defaulting to 12:00:00 of that day for transaction/order timestamp
@@ -1157,24 +1133,31 @@
       // proceed sale: reduce stock, create order and transaction
       p.stock = Number(p.stock||0) - qty; p.sold = Number(p.sold||0) + qty;
       
-      // Calculations based on the chosen sellingPricePerUnit
-      const goodsSaleTotal = sellingPricePerUnit * qty; // Total amount from the goods only
-      // Total Gross Sale Amount = Goods Total + Shipping Charge
-      const totalSaleAmount = goodsSaleTotal + shippingCharge; 
-      // Gross Profit on this sale = (Price/unit - Cost/unit) * Qty + Shipping Charge
-      // Shipping charge is pure profit since it covers the delivery cost (which is assumed as part of the total overhead/expense or covered by the charge itself).
-      const profit = (sellingPricePerUnit - Number(p.cost||0)) * qty + shippingCharge; 
+      // --- START: CORRECTED FINANCIAL LOGIC ---
+      // 1. Goods Sale Total: Revenue from the goods only
+      const goodsSaleTotal = sellingPricePerUnit * qty; 
+      
+      // 2. Total Gross Amount: Total cash received from the customer (used for order total)
+      const totalGrossAmount = goodsSaleTotal + shippingCharge; 
+
+      // 3. Gross Profit: Only from the sale of goods. Shipping is excluded from profit.
+      // (The actual shipping cost should be recorded separately as an 'expense' transaction later to properly reflect Net Profit.)
+      const profit = (sellingPricePerUnit - Number(p.cost||0)) * qty; 
+      // --- END: CORRECTED FINANCIAL LOGIC ---
 
       const orderId = uid('o');
       
-      // Transaction: Amount is the Gross Sale Total, Profit is the Gross Profit
+      // Transaction: Amount is the Goods Sale Total only (for 'Total Sales' KPI). Profit is Goods Profit.
+      // NOTE: The cash received includes the shipping charge, but for 'Total Sales' and 'Profit' KPIs, 
+      // we only account for the goods revenue and profit, keeping the shipping charge neutral 
+      // until an actual shipping expense is recorded.
       const tx = { 
           id:uid('t'), 
           type:'sale', 
           category:'Retail', 
-          name:p.name + (isCustomPrice ? ' (Custom Price)' : '') + (shippingCharge > 0 ? ' + Shipping' : ''), 
-          amount: totalSaleAmount, // Total Sale Amount (Goods + Shipping)
-          profit: profit, // Total Profit (Goods Profit + Shipping Charge)
+          name:p.name + (isCustomPrice ? ' (Custom Price)' : '') + (shippingCharge > 0 ? ' + Shipping Received' : ''), 
+          amount: goodsSaleTotal, // ONLY GOODS REVENUE for Total Sales KPI
+          profit: profit, // ONLY GOODS PROFIT for Net Profit KPI
           ownerSplit:{a:0, b:0}, 
           productsAffected:[{sku:p.sku, qty}], 
           timestamp, 
@@ -1190,13 +1173,13 @@
           customerName: $('#sell-name').value||'Unknown', 
           address: $('#sell-address').value||'', 
           items:[{sku:p.sku, qty, price:sellingPricePerUnit}], // Use actual selling price
-          total: totalSaleAmount, // Total is the full amount including shipping
+          total: totalGrossAmount, // Total is the full amount including shipping (cash received)
           paymentType: $('#sell-pay').value, 
           status:'shipping', 
           placedAt: timestamp, 
           statusHistory:[{status:'placed', at: timestamp}], 
           note: $('#sell-note').value||'',
-          shippingCharge: shippingCharge // Issue 3
+          shippingCharge: shippingCharge 
       };
       state.orders.push(order);
 
@@ -1372,6 +1355,7 @@
 
   // End IIFE
 })();
+
 </script>
 </body>
 </html>
